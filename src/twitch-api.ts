@@ -29,6 +29,14 @@ const requestOpts: needle.NeedleOptions = {
   },
 };
 
+if (twitchDB.access_token) {
+  console.log('Twitch access token available, checking for validity.');
+  checkTokenValidity().then(() => {
+    console.log('Twitch start up access token validity check done.');
+    // connect to FFZ WS here
+  });
+}
+
 app.get('/twitchlogin', (req, res) => {
   // tslint:disable-next-line: max-line-length
   const url = `https://api.twitch.tv/kraken/oauth2/authorize?client_id=${config.twitch.clientID}&redirect_uri=${config.twitch.redirectURI}&response_type=code&scope=chat:read+chat:edit&force_verify=true`;
@@ -73,6 +81,34 @@ app.get('/twitchauth', (req, res) => {
     });
   });
 });
+
+async function checkTokenValidity() {
+  const resp = await needle('get', 'https://api.twitch.tv/kraken', requestOpts);
+  if (resp.statusCode === 200) {
+    if (!resp.body.token || !resp.body.token.valid) {
+      await updateToken();
+    }
+    return;
+  }
+}
+
+async function updateToken() {
+  console.log('Twitch access token being refreshed.');
+  const resp = await needle('post', 'https://api.twitch.tv/kraken/oauth2/token', {
+    grant_type: 'refresh_token',
+    refresh_token: encodeURI(twitchDB.refresh_token),
+    client_id: config.twitch.clientID,
+    client_secret: config.twitch.clientSecret,
+  });
+  if (resp.statusCode === 200) {
+    twitchDB.access_token = resp.body.access_token;
+    twitchDB.refresh_token = resp.body.refresh_token;
+    requestOpts.headers!.Authorization = `OAuth ${resp.body.access_token}`;
+    console.log('Twitch access token successfully refreshed.');
+    saveDatabase();
+    return;
+  }
+}
 
 function saveDatabase() {
   fsExtra.writeJSONSync(
