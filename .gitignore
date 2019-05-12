@@ -62,3 +62,5 @@ typings/
 
 /dist/
 /pkg/
+config.json
+twitch_db.json

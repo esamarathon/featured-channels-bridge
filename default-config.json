@@ -1,0 +1,13 @@
+{
+  "http": {
+    "port": 1234,
+    "key": "DEFAULT_KEY"
+  },
+  "twitch": {
+    "channelName": "CHANNEL_NAME",
+    "clientID": "CLIENT_ID",
+    "clientSecret": "CLIENT_SECRET",
+    "redirectURI": "URI",
+    "extToken": "TOKEN"
+  }
+}
