@@ -2,6 +2,7 @@ import fsExtra from 'fs-extra';
 import needle from 'needle';
 import path from 'path';
 import { app, config } from '.';
+import * as ffz from './ffz';
 
 interface TwitchDatabase {
   access_token: string;
@@ -10,7 +11,7 @@ interface TwitchDatabase {
   id: string;
 }
 
-let twitchDB: TwitchDatabase = fsExtra.readJSONSync(
+export let twitchDB: TwitchDatabase = fsExtra.readJSONSync(
   path.join(process.cwd(), './twitch_db.json'),
   { throws: false },
 );
@@ -20,45 +21,49 @@ if (twitchDB) {
   twitchDB = <TwitchDatabase>{};
 }
 
-const requestOpts: needle.NeedleOptions = {
-  headers: {
-    Accept: 'application/vnd.twitchtv.v5+json',
-    'Content-Type': 'application/json',
-    'Client-ID': config.twitch.clientID,
-    Authorization: twitchDB.access_token ? `OAuth ${twitchDB.access_token}` : undefined,
-  },
-};
+let requestOpts: needle.NeedleOptions;
+export function init() {
+  requestOpts = {
+    headers: {
+      Accept: 'application/vnd.twitchtv.v5+json',
+      'Content-Type': 'application/json',
+      'Client-ID': config.twitch.clientID,
+      Authorization: twitchDB.access_token ? `OAuth ${twitchDB.access_token}` : undefined,
+    },
+  };
 
-if (twitchDB.access_token) {
-  console.log('Twitch access token available, checking for validity.');
-  checkTokenValidity().then(() => {
-    console.log('Twitch start up access token validity check done.');
-    // connect to FFZ WS here
+  if (twitchDB.access_token) {
+    console.log('Twitch access token available, checking for validity.');
+    checkTokenValidity().then(() => {
+      console.log('Twitch start up access token validity check done.');
+      ffz.connectToWS();
+    });
+  }
+
+  app.get('/twitchlogin', (req, res) => {
+    // tslint:disable-next-line: max-line-length
+    const url = `https://api.twitch.tv/kraken/oauth2/authorize?client_id=${config.twitch.clientID}&redirect_uri=${config.twitch.redirectURI}&response_type=code&scope=chat:read+chat:edit&force_verify=true`;
+    if (twitchDB.name) {
+      // tslint:disable-next-line: max-line-length
+      res.send(`<a href="${url}">CLICK HERE TO LOGIN</a><br><br>Account already logged in, only use above link if needed.`);
+    } else {
+      res.send(`<a href="${url}">CLICK HERE TO LOGIN</a>`);
+    }
+  });
+
+  app.get('/twitchauth', (req, res) => {
+    console.log('Someone is trying to authorise with Twitch.');
+
+    if (!req.query.error) {
+      authTwitch(req.query.code).then(() => {
+        // tslint:disable-next-line: max-line-length
+        res.send('<b>Twitch authentication is now complete, feel free to close this window/tab.</b>');
+      });
+    } else {
+      res.sendStatus(500);
+    }
   });
 }
-
-app.get('/twitchlogin', (req, res) => {
-  // tslint:disable-next-line: max-line-length
-  const url = `https://api.twitch.tv/kraken/oauth2/authorize?client_id=${config.twitch.clientID}&redirect_uri=${config.twitch.redirectURI}&response_type=code&scope=chat:read+chat:edit&force_verify=true`;
-  if (twitchDB.name) {
-    // tslint:disable-next-line: max-line-length
-    res.send(`<a href="${url}">CLICK HERE TO LOGIN</a><br><br>Account already logged in, only use above link if needed.`);
-  } else {
-    res.send(`<a href="${url}">CLICK HERE TO LOGIN</a>`);
-  }
-});
-
-app.get('/twitchauth', (req, res) => {
-  console.log('Someone is trying to authorise with Twitch.');
-
-  if (!req.query.error) {
-    authTwitch(req.query.code).then(() => {
-      res.send('<b>Twitch authentication is now complete, feel free to close this window/tab.</b>');
-    });
-  } else {
-    res.sendStatus(500);
-  }
-});
 
 async function authTwitch(code: string) {
   const resp1 = await needle(
@@ -89,13 +94,13 @@ async function authTwitch(code: string) {
   console.log('Twitch user trying to authorise is %s.', resp2.body.token.user_name);
   if (resp2.body.token.user_name === config.twitch.channelName) {
     saveDatabase();
-    // connect to FFZ WS here
+    ffz.connectToWS();
     console.log('Twitch authorisation successful.');
   }
   return;
 }
 
-async function checkTokenValidity() {
+export async function checkTokenValidity() {
   const resp = await needle('get', 'https://api.twitch.tv/kraken', requestOpts);
   if (resp.statusCode === 200) {
     if (!resp.body.token || !resp.body.token.valid) {

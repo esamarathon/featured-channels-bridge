@@ -3,7 +3,9 @@ import express from 'express';
 import fsExtra from 'fs-extra';
 import http from 'http';
 import path from 'path';
+import * as ffz from './ffz';
 import * as ext from './twitch-ext';
+import * as api from './twitch-api';
 
 interface Config {
   http: {
@@ -39,6 +41,9 @@ app.use(bodyParser.json());
 server.listen(config.http.port);
 console.log(`HTTP server listening on port ${config.http.port}.`);
 
+// Sets up some Twitch API stuff.
+api.init();
+
 app.get('/', (req, res) => {
   res.send('Running OK');
 });
@@ -57,9 +62,7 @@ app.post('/featured_channels', (req, res) => {
   }
 
   const channels: FeaturedChannels = req.body.channels || [];
-  // set FFZ here as well
+  ffz.setChannels(channels);
   ext.setChannels(channels);
   res.sendStatus(200);
 });
-
-require('./twitch-api');
