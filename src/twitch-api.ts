@@ -93,9 +93,9 @@ async function authTwitch(code: string) {
   twitchDB.name = resp2.body.token.user_name;
   console.log('Twitch user trying to authorise is %s.', resp2.body.token.user_name);
   if (resp2.body.token.user_name === config.twitch.channelName) {
+    console.log('Twitch authorisation successful.');
     saveDatabase();
     ffz.connectToWS();
-    console.log('Twitch authorisation successful.');
   }
   return;
 }

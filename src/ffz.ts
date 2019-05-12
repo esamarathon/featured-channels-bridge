@@ -119,7 +119,7 @@ function sendAuthThroughTwitchChat(auth: string) {
   checkTokenValidity().then(() => {
     const client = new twitchJs.client({
       options: {
-        debug: true,
+        // debug: true,
       },
       connection: {
         secure: true,
