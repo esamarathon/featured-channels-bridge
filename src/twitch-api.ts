@@ -50,37 +50,50 @@ app.get('/twitchlogin', (req, res) => {
 
 app.get('/twitchauth', (req, res) => {
   console.log('Someone is trying to authorise with Twitch.');
-  res.send('<b>Twitch authentication is now complete, feel free to close this window/tab.</b>');
 
-  if (req.query.error) {
-    return;
-  }
-
-  needle.post('https://api.twitch.tv/kraken/oauth2/token', {
-    client_id: config.twitch.clientID,
-    client_secret: config.twitch.clientSecret,
-    code: req.query.code,
-    grant_type: 'authorization_code',
-    redirect_uri: config.twitch.redirectURI,
-  }, (err, resp) => { // tslint:disable-line: align
-    twitchDB.access_token = resp.body.access_token;
-    twitchDB.refresh_token = resp.body.refresh_token;
-    requestOpts.headers!.Authorization = `OAuth ${resp.body.access_token}`;
-    console.log('Twitch initial tokens obtained.');
-
-    needle.get('https://api.twitch.tv/kraken', requestOpts, (err, resp) => {
-      twitchDB.id = resp.body.token.user_id;
-      twitchDB.name = resp.body.token.user_name;
-      console.log('Twitch user trying to authorise is %s.', resp.body.token.user_name);
-      if (resp.body.token.user_name !== config.twitch.channelName) {
-        return;
-      }
-      saveDatabase();
-      // connect to FFZ WS here
-      console.log('Twitch authorisation successful.');
+  if (!req.query.error) {
+    authTwitch(req.query.code).then(() => {
+      res.send('<b>Twitch authentication is now complete, feel free to close this window/tab.</b>');
     });
-  });
+  } else {
+    res.sendStatus(500);
+  }
 });
+
+async function authTwitch(code: string) {
+  const resp1 = await needle(
+    'post',
+    'https://api.twitch.tv/kraken/oauth2/token',
+    {
+      code,
+      client_id: config.twitch.clientID,
+      client_secret: config.twitch.clientSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: config.twitch.redirectURI,
+    },
+  );
+
+  twitchDB.access_token = resp1.body.access_token;
+  twitchDB.refresh_token = resp1.body.refresh_token;
+  requestOpts.headers!.Authorization = `OAuth ${resp1.body.access_token}`;
+  console.log('Twitch initial tokens obtained.');
+
+  const resp2 = await needle(
+    'get',
+    'https://api.twitch.tv/kraken',
+    requestOpts,
+  );
+
+  twitchDB.id = resp2.body.token.user_id;
+  twitchDB.name = resp2.body.token.user_name;
+  console.log('Twitch user trying to authorise is %s.', resp2.body.token.user_name);
+  if (resp2.body.token.user_name === config.twitch.channelName) {
+    saveDatabase();
+    // connect to FFZ WS here
+    console.log('Twitch authorisation successful.');
+  }
+  return;
+}
 
 async function checkTokenValidity() {
   const resp = await needle('get', 'https://api.twitch.tv/kraken', requestOpts);
