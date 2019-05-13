@@ -10,14 +10,14 @@ import * as api from './twitch-api';
 interface Config {
   http: {
     port: number;
-    key: string;
+    key: string | undefined;
   };
   twitch: {
-    channelName: string;
-    clientID: string;
-    clientSecret: string;
-    redirectURI: string;
-    extToken: string;
+    channelName: string | undefined;
+    clientID: string | undefined;
+    clientSecret: string | undefined;
+    redirectURI: string | undefined;
+    extToken: string | undefined;
   };
 }
 
@@ -35,14 +35,14 @@ const envPort = (
 export let config: Config = {
   http: {
     port: envPort || confFile.http.port || 1234,
-    key: env.HTTP_KEY || confFile.http.key || 'DEFAULT_KEY',
+    key: env.HTTP_KEY || confFile.http.key,
   },
   twitch: {
-    channelName: env.TWITCH_CHANNELNAME || confFile.twitch.channelName || 'CHANNEL_NAME',
-    clientID: env.TWITCH_CLIENTID || confFile.twitch.clientID || 'CLIENT_ID',
-    clientSecret: env.TWITCH_CLIENTSECRET || confFile.twitch.clientSecret || 'CLIENT_SECRET',
-    redirectURI: env.TWITCH_REDIRECTURI || confFile.twitch.redirectURI || 'URI',
-    extToken: env.TWITCH_EXTTOKEN || confFile.twitch.extToken || 'TOKEN',
+    channelName: env.TWITCH_CHANNELNAME || confFile.twitch.channelName,
+    clientID: env.TWITCH_CLIENTID || confFile.twitch.clientID,
+    clientSecret: env.TWITCH_CLIENTSECRET || confFile.twitch.clientSecret,
+    redirectURI: env.TWITCH_REDIRECTURI || confFile.twitch.redirectURI,
+    extToken: env.TWITCH_EXTTOKEN || confFile.twitch.extToken,
   },
 };
 
@@ -63,7 +63,7 @@ app.get('/', (req, res) => {
 
 app.post('/featured_channels', (req, res) => {
   // Reject POSTs without the correct key.
-  if (req.query.key !== config.http.key) {
+  if (req.query.key && req.query.key !== config.http.key) {
     res.sendStatus(403);
     return;
   }
