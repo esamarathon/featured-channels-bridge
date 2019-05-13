@@ -23,15 +23,28 @@ interface Config {
 
 type FeaturedChannels = string[];
 
-// Load config if possible.
-export const config: Config = fsExtra.readJSONSync(
+// Configs!
+const confFile: Config = fsExtra.readJSONSync(
   path.join(process.cwd(), './config.json'),
   { throws: false },
 );
-if (!config) {
-  console.log('You have forgotten the config.json file.');
-  process.exit();
-}
+const env = process.env;
+const envPort = (
+  env.HTTP_PORT && !isNaN(parseInt(env.HTTP_PORT, 0))
+  ) ? parseInt(env.HTTP_PORT, 0) : undefined;
+export let config: Config = {
+  http: {
+    port: envPort || confFile.http.port || 1234,
+    key: env.HTTP_KEY || confFile.http.key || 'DEFAULT_KEY',
+  },
+  twitch: {
+    channelName: env.TWITCH_CHANNELNAME || confFile.twitch.channelName || 'CHANNEL_NAME',
+    clientID: env.TWITCH_CLIENTID || confFile.twitch.clientID || 'CLIENT_ID',
+    clientSecret: env.TWITCH_CLIENTSECRET || confFile.twitch.clientSecret || 'CLIENT_SECRET',
+    redirectURI: env.TWITCH_REDIRECTURI || confFile.twitch.redirectURI || 'URI',
+    extToken: env.TWITCH_EXTTOKEN || confFile.twitch.extToken || 'TOKEN',
+  },
+};
 
 // Set up HTTP server.
 console.log('HTTP server starting...');
