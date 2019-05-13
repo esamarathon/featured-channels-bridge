@@ -27,7 +27,7 @@ type FeaturedChannels = string[];
 const confFile: Config = fsExtra.readJSONSync(
   path.join(process.cwd(), './config.json'),
   { throws: false },
-);
+) || <Config>{ http: {}, twitch: {} };
 const env = process.env;
 const envPort = (
   env.HTTP_PORT && !isNaN(parseInt(env.HTTP_PORT, 0))
