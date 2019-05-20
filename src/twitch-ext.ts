@@ -2,6 +2,9 @@ import needle from 'needle';
 import { config } from '.';
 
 export async function setChannels(usernames: string[]) {
+  if (!config.twitch.extToken) {
+    return;
+  }
   const usernamesString = usernames.length ? usernames.join(',') : '';
   console.log('Attempting to update Twitch extension "Featured Channels" information.');
   const resp = await needle(

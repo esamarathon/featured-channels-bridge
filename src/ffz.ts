@@ -84,7 +84,7 @@ async function sendMessage(message: string): Promise<string> {
 
 export function setChannels(usernames: string[]) {
   console.log('Attempting to set FrankerFaceZ Twitch names.');
-  if (wsConn.readyState === 1) {
+  if (wsConn && wsConn.readyState === 1) {
     console.log('Sent FrankerFaceZ Twitch names.');
     sendMessage(`update_follow_buttons ${JSON.stringify([twitchDB.name, usernames])}`)
     .then((msg) => {

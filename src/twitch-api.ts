@@ -54,12 +54,13 @@ export function init() {
   app.get('/twitchauth', (req, res) => {
     console.log('Someone is trying to authorise with Twitch.');
 
-    if (!req.query.error) {
+    if (!req.query.error && req.query.code) {
       authTwitch(req.query.code).then(() => {
         // tslint:disable-next-line: max-line-length
         res.send('<b>Twitch authentication is now complete, feel free to close this window/tab.</b>');
       });
     } else {
+      console.warn('Issue detected while someone was attempting to authorise with Twitch.');
       res.sendStatus(500);
     }
   });
