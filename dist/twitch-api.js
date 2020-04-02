@@ -54,7 +54,7 @@ var _1 = require(".");
 var ffz = __importStar(require("./ffz"));
 var requestOpts;
 // eslint-disable-next-line import/no-mutable-exports
-exports.twitchDB = fs_extra_1.default.readJSONSync(path_1.default.join(process.cwd(), './twitch_db.json'), { throws: false });
+exports.twitchDB = fs_extra_1.default.readJSONSync(path_1.default.join(process.cwd(), './persistent/twitch_db.json'), { throws: false });
 if (exports.twitchDB) {
     console.log('Loaded Twitch database from file.');
 }
@@ -62,7 +62,7 @@ else {
     exports.twitchDB = {};
 }
 function saveDatabase() {
-    fs_extra_1.default.writeJSONSync(path_1.default.join(process.cwd(), './twitch_db.json'), exports.twitchDB);
+    fs_extra_1.default.writeJSONSync(path_1.default.join(process.cwd(), './persistent/twitch_db.json'), exports.twitchDB);
 }
 function updateToken() {
     return __awaiter(this, void 0, void 0, function () {
