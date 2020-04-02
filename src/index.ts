@@ -2,6 +2,7 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import fsExtra from 'fs-extra';
 import http from 'http';
+import _ from 'lodash';
 import path from 'path';
 import * as ffz from './ffz';
 import * as api from './twitch-api';
@@ -10,7 +11,9 @@ import * as ext from './twitch-ext';
 interface Config {
   http: {
     port: number;
-    key: string | undefined;
+    keys: {
+      [k: string]: string;
+    };
   };
   twitch: {
     channelName: string | undefined;
@@ -24,27 +27,42 @@ interface Config {
 type FeaturedChannels = string[];
 
 // Configs!
-const confFile: Config = fsExtra.readJSONSync(
+const defaultConfig: any = fsExtra.readJSONSync(
+  path.join(process.cwd(), './default-config.json'),
+  { throws: false },
+);
+defaultConfig.http.keys = {};
+const extraConfig: any = fsExtra.readJSONSync(
   path.join(process.cwd(), './config.json'),
   { throws: false },
-) || { http: {}, twitch: {} } as Config;
+);
+
 const { env } = process;
+const envKeys = Object.keys(env).reduce((previousValue, currentValue) => {
+  const obj = previousValue;
+  if (env[currentValue] && currentValue.startsWith('HTTP_KEY_')) {
+    obj[currentValue.replace('HTTP_KEY_', '')] = env[currentValue] || '';
+  }
+  return obj;
+}, {} as { [k: string]: string });
 const envPort = (
   env.HTTP_PORT && !Number.isNaN(parseInt(env.HTTP_PORT, 0))
 ) ? parseInt(env.HTTP_PORT, 0) : undefined;
-export const config: Config = {
+
+const envConfig: any = {
   http: {
-    port: envPort || confFile.http.port || 1234,
-    key: env.HTTP_KEY || confFile.http.key,
+    port: envPort,
+    keys: envKeys,
   },
   twitch: {
-    channelName: env.TWITCH_CHANNELNAME || confFile.twitch.channelName,
-    clientID: env.TWITCH_CLIENTID || confFile.twitch.clientID,
-    clientSecret: env.TWITCH_CLIENTSECRET || confFile.twitch.clientSecret,
-    redirectURI: env.TWITCH_REDIRECTURI || confFile.twitch.redirectURI,
-    extToken: env.TWITCH_EXTTOKEN || confFile.twitch.extToken,
+    channelName: env.TWITCH_CHANNELNAME,
+    clientID: env.TWITCH_CLIENTID,
+    clientSecret: env.TWITCH_CLIENTSECRET,
+    redirectURI: env.TWITCH_REDIRECTURI,
+    extToken: env.TWITCH_EXTTOKEN,
   },
 };
+export const config: Config = _.merge(defaultConfig, extraConfig, envConfig);
 
 // Set up HTTP server.
 console.log('HTTP server starting...');
@@ -61,9 +79,19 @@ app.get('/', (req, res) => {
   res.send('Running OK');
 });
 
+function checkKey(httpKey?: string): string | undefined {
+  const { keys } = config.http;
+  const validKey = Object.keys(keys).find((key) => keys[key] === httpKey);
+  if (validKey) {
+    console.log('HTTP key used: %s', validKey);
+  }
+  return validKey;
+}
+
 app.post('/featured_channels', (req, res) => {
   // Reject POSTs without the correct key.
-  if (req.query.key && req.query.key !== config.http.key) {
+  const validKey = checkKey(req.query.key);
+  if (!validKey) {
     res.sendStatus(403);
     return;
   }
