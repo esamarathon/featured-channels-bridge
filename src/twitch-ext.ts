@@ -1,7 +1,7 @@
 import needle from 'needle';
 import { config } from '.';
 
-export async function setChannels(usernames: string[]) {
+export async function setChannels(usernames: string[]): Promise<void> {
   if (!config.twitch.extToken) {
     return;
   }

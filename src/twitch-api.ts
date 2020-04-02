@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+
 import fsExtra from 'fs-extra';
 import needle from 'needle';
 import path from 'path';
@@ -11,6 +13,9 @@ interface TwitchDatabase {
   id: string;
 }
 
+let requestOpts: needle.NeedleOptions;
+
+// eslint-disable-next-line import/no-mutable-exports
 export let twitchDB: TwitchDatabase = fsExtra.readJSONSync(
   path.join(process.cwd(), './twitch_db.json'),
   { throws: false },
@@ -18,11 +23,81 @@ export let twitchDB: TwitchDatabase = fsExtra.readJSONSync(
 if (twitchDB) {
   console.log('Loaded Twitch database from file.');
 } else {
-  twitchDB = <TwitchDatabase>{};
+  twitchDB = {} as TwitchDatabase;
 }
 
-let requestOpts: needle.NeedleOptions;
-export function init() {
+function saveDatabase(): void {
+  fsExtra.writeJSONSync(
+    path.join(process.cwd(), './twitch_db.json'),
+    twitchDB,
+  );
+}
+
+async function updateToken(): Promise<void> {
+  console.log('Twitch access token being refreshed.');
+  const resp = await needle('post', 'https://api.twitch.tv/kraken/oauth2/token', {
+    grant_type: 'refresh_token',
+    refresh_token: encodeURI(twitchDB.refresh_token),
+    client_id: config.twitch.clientID,
+    client_secret: config.twitch.clientSecret,
+  });
+  if (resp.statusCode === 200) {
+    twitchDB.access_token = resp.body.access_token;
+    twitchDB.refresh_token = resp.body.refresh_token;
+    if (requestOpts.headers) {
+      requestOpts.headers.Authorization = `OAuth ${resp.body.access_token}`;
+    }
+    console.log('Twitch access token successfully refreshed.');
+    saveDatabase();
+  }
+}
+
+export async function checkTokenValidity(): Promise<void> {
+  const resp = await needle('get', 'https://api.twitch.tv/kraken', requestOpts);
+  if (resp.statusCode === 200) {
+    if (!resp.body.token || !resp.body.token.valid) {
+      await updateToken();
+    }
+  }
+}
+
+async function authTwitch(code: string): Promise<void> {
+  const resp1 = await needle(
+    'post',
+    'https://api.twitch.tv/kraken/oauth2/token',
+    {
+      code,
+      client_id: config.twitch.clientID,
+      client_secret: config.twitch.clientSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: config.twitch.redirectURI,
+    },
+  );
+
+  twitchDB.access_token = resp1.body.access_token;
+  twitchDB.refresh_token = resp1.body.refresh_token;
+  if (requestOpts.headers) {
+    requestOpts.headers.Authorization = `OAuth ${resp1.body.access_token}`;
+  }
+  console.log('Twitch initial tokens obtained.');
+
+  const resp2 = await needle(
+    'get',
+    'https://api.twitch.tv/kraken',
+    requestOpts,
+  );
+
+  twitchDB.id = resp2.body.token.user_id;
+  twitchDB.name = resp2.body.token.user_name;
+  console.log('Twitch user trying to authorise is %s.', resp2.body.token.user_name);
+  if (resp2.body.token.user_name === config.twitch.channelName) {
+    console.log('Twitch authorisation successful.');
+    saveDatabase();
+    ffz.connectToWS();
+  }
+}
+
+export function init(): void {
   requestOpts = {
     headers: {
       Accept: 'application/vnd.twitchtv.v5+json',
@@ -64,74 +139,4 @@ export function init() {
       res.sendStatus(500);
     }
   });
-}
-
-async function authTwitch(code: string) {
-  const resp1 = await needle(
-    'post',
-    'https://api.twitch.tv/kraken/oauth2/token',
-    {
-      code,
-      client_id: config.twitch.clientID,
-      client_secret: config.twitch.clientSecret,
-      grant_type: 'authorization_code',
-      redirect_uri: config.twitch.redirectURI,
-    },
-  );
-
-  twitchDB.access_token = resp1.body.access_token;
-  twitchDB.refresh_token = resp1.body.refresh_token;
-  requestOpts.headers!.Authorization = `OAuth ${resp1.body.access_token}`;
-  console.log('Twitch initial tokens obtained.');
-
-  const resp2 = await needle(
-    'get',
-    'https://api.twitch.tv/kraken',
-    requestOpts,
-  );
-
-  twitchDB.id = resp2.body.token.user_id;
-  twitchDB.name = resp2.body.token.user_name;
-  console.log('Twitch user trying to authorise is %s.', resp2.body.token.user_name);
-  if (resp2.body.token.user_name === config.twitch.channelName) {
-    console.log('Twitch authorisation successful.');
-    saveDatabase();
-    ffz.connectToWS();
-  }
-  return;
-}
-
-export async function checkTokenValidity() {
-  const resp = await needle('get', 'https://api.twitch.tv/kraken', requestOpts);
-  if (resp.statusCode === 200) {
-    if (!resp.body.token || !resp.body.token.valid) {
-      await updateToken();
-    }
-    return;
-  }
-}
-
-async function updateToken() {
-  console.log('Twitch access token being refreshed.');
-  const resp = await needle('post', 'https://api.twitch.tv/kraken/oauth2/token', {
-    grant_type: 'refresh_token',
-    refresh_token: encodeURI(twitchDB.refresh_token),
-    client_id: config.twitch.clientID,
-    client_secret: config.twitch.clientSecret,
-  });
-  if (resp.statusCode === 200) {
-    twitchDB.access_token = resp.body.access_token;
-    twitchDB.refresh_token = resp.body.refresh_token;
-    requestOpts.headers!.Authorization = `OAuth ${resp.body.access_token}`;
-    console.log('Twitch access token successfully refreshed.');
-    saveDatabase();
-    return;
-  }
-}
-
-function saveDatabase() {
-  fsExtra.writeJSONSync(
-    path.join(process.cwd(), './twitch_db.json'),
-    twitchDB,
-  );
 }

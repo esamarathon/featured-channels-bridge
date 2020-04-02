@@ -4,8 +4,8 @@ import fsExtra from 'fs-extra';
 import http from 'http';
 import path from 'path';
 import * as ffz from './ffz';
-import * as ext from './twitch-ext';
 import * as api from './twitch-api';
+import * as ext from './twitch-ext';
 
 interface Config {
   http: {
@@ -27,11 +27,11 @@ type FeaturedChannels = string[];
 const confFile: Config = fsExtra.readJSONSync(
   path.join(process.cwd(), './config.json'),
   { throws: false },
-) || <Config>{ http: {}, twitch: {} };
-const env = process.env;
+) || { http: {}, twitch: {} } as Config;
+const { env } = process;
 const envPort = (
-  env.HTTP_PORT && !isNaN(parseInt(env.HTTP_PORT, 0))
-  ) ? parseInt(env.HTTP_PORT, 0) : undefined;
+  env.HTTP_PORT && !Number.isNaN(parseInt(env.HTTP_PORT, 0))
+) ? parseInt(env.HTTP_PORT, 0) : undefined;
 export const config: Config = {
   http: {
     port: envPort || confFile.http.port || 1234,
