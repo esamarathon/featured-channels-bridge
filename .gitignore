@@ -104,4 +104,4 @@ typings/
 .tern-port
 
 config.json
-twitch_db.json
+persistent/twitch_db.json

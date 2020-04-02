@@ -17,7 +17,7 @@ let requestOpts: needle.NeedleOptions;
 
 // eslint-disable-next-line import/no-mutable-exports
 export let twitchDB: TwitchDatabase = fsExtra.readJSONSync(
-  path.join(process.cwd(), './twitch_db.json'),
+  path.join(process.cwd(), './persistent/twitch_db.json'),
   { throws: false },
 );
 if (twitchDB) {
@@ -28,7 +28,7 @@ if (twitchDB) {
 
 function saveDatabase(): void {
   fsExtra.writeJSONSync(
-    path.join(process.cwd(), './twitch_db.json'),
+    path.join(process.cwd(), './persistent/twitch_db.json'),
     twitchDB,
   );
 }
