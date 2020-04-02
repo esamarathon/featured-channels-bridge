@@ -5,4 +5,4 @@ node_modules/
 config.json
 Dockerfile
 .dockerignore
-twitch_db.json
+persistent/twitch_db.json
