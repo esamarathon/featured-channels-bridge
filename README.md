@@ -12,7 +12,7 @@ npm run build
 npm start
 ```
 
-A Docker container is also available [on Docker Hub](https://hub.docker.com/r/esamarathon/featured-channels-bridge).
+A Docker image is also available under "Packages".
 
 ## Configuration
 
