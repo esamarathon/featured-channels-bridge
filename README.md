@@ -4,11 +4,11 @@ A bridge that can be used to set [FrankerFaceZ](https://www.frankerfacez.com/) f
 
 ## Installation/Usage
 
-```cmd
+```
+cmd
 git clone https://github.com/esamarathon/featured-channels-bridge.git
 npm install
 npm run build
-npm run package
 npm start
 ```
 
