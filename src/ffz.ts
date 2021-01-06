@@ -111,12 +111,10 @@ export async function connectToWS(): Promise<void> {
     console.log('Error occurred on the FrankerFaceZ connection: %s', err);
   });
 
-  wsConn.once('open', () => {
+  wsConn.once('open', async () => {
     console.log('Connection to FrankerFaceZ successful.');
-    sendInitMessages().then(() => {
-      pingTimeout = setTimeout(ping, 60000);
-      return new Promise((resolve) => resolve());
-    });
+    await sendInitMessages();
+    pingTimeout = setTimeout(ping, 60000);
   });
 
   // If we disconnect, just run this function again after a delay to reconnect.

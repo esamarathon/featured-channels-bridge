@@ -45,9 +45,7 @@ const envKeys = Object.keys(env).reduce((previousValue, currentValue) => {
   }
   return obj;
 }, {} as { [k: string]: string });
-const envPort = (
-  env.HTTP_PORT && !Number.isNaN(parseInt(env.HTTP_PORT, 0))
-) ? parseInt(env.HTTP_PORT, 0) : undefined;
+const envPort = Number(env.HTTP_PORT) || undefined;
 
 const envConfig: any = {
   http: {
@@ -90,7 +88,7 @@ function checkKey(httpKey?: string): string | undefined {
 
 app.post('/featured_channels', (req, res) => {
   // Reject POSTs without the correct key.
-  const validKey = checkKey(req.query.key);
+  const validKey = checkKey(req.query.key as string);
   if (!validKey) {
     res.sendStatus(403);
     return;

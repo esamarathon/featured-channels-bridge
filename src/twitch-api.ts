@@ -7,8 +7,8 @@ import { app, config } from '.';
 import * as ffz from './ffz';
 
 interface TwitchDatabase {
-  access_token: string;
-  refresh_token: string;
+  access_token: string; // eslint-disable-line camelcase
+  refresh_token: string; // eslint-disable-line camelcase
   name: string;
   id: string;
 }
@@ -130,7 +130,7 @@ export function init(): void {
     console.log('Someone is trying to authorise with Twitch.');
 
     if (!req.query.error && req.query.code) {
-      authTwitch(req.query.code).then(() => {
+      authTwitch(req.query.code as string).then(() => {
         // tslint:disable-next-line: max-line-length
         res.send('<b>Twitch authentication is now complete, feel free to close this window/tab.</b>');
       });

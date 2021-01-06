@@ -39,6 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.setChannels = exports.connectToWS = void 0;
 var twitch_js_1 = __importDefault(require("twitch-js"));
 var ws_1 = __importDefault(require("ws"));
 var twitch_api_1 = require("./twitch-api");
@@ -169,7 +170,6 @@ function connectToWS() {
                 console.log('Connection to FrankerFaceZ successful.');
                 sendInitMessages().then(function () {
                     pingTimeout = setTimeout(ping, 60000);
-                    return new Promise(function (resolve) { return resolve(); });
                 });
             });
             // If we disconnect, just run this function again after a delay to reconnect.
