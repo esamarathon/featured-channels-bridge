@@ -13,10 +13,10 @@ async function sendMessage(message: string): Promise<string> {
   messageNo += 1;
 
   return new Promise((resolve) => {
-    const msgEvt = (data: string): void => {
-      if (data.includes(`${thisMessageNo} ok`)) {
+    const msgEvt = (data: WebSocket.RawData): void => {
+      if (data.toString().includes(`${thisMessageNo} ok`)) {
         wsConn.removeListener('message', msgEvt);
-        resolve(data.substr(data.indexOf(' ') + 1));
+        resolve(data.toString().substring(data.toString().indexOf(' ') + 1));
       }
     };
     wsConn.on('message', msgEvt);
@@ -125,17 +125,17 @@ export async function connectToWS(): Promise<void> {
   });
 
   // For -1 messages.
-  wsConn.on('message', (data: string) => {
+  wsConn.on('message', (data) => {
     // console.log(`[DEBUG-RECV]: ${data}`);
-    if (data.startsWith('-1')) {
+    if (data.toString().startsWith('-1')) {
       // If we need to authorize with FFZ, gets the auth code and does that.
       // Original command will still be executed once authed, so no need for any other checking.
-      if (data.includes('do_authorize')) {
-        const authCode = JSON.parse(data.substr(16));
+      if (data.toString().includes('do_authorize')) {
+        const authCode = JSON.parse(data.toString().substring(16));
         sendAuthThroughTwitchChat(authCode);
       }
 
-      if (data.includes('follow_buttons')) {
+      if (data.toString().includes('follow_buttons')) {
         console.log('Got follow_buttons from FrankerFaceZ connection.');
       }
     }
