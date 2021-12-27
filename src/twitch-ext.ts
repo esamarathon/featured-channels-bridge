@@ -1,6 +1,7 @@
 import needle from 'needle';
-import { config } from '.';
+import { config } from '.'; // eslint-disable-line import/no-cycle
 
+// eslint-disable-next-line import/prefer-default-export
 export async function setChannels(usernames: string[]): Promise<void> {
   if (!config.twitch.extToken) {
     return;

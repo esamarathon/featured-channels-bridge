@@ -1,6 +1,6 @@
 import twitchJs from 'twitch-js';
 import WebSocket from 'ws';
-import { checkTokenValidity, twitchDB } from './twitch-api';
+import { checkTokenValidity, twitchDB } from './twitch-api'; // eslint-disable-line import/no-cycle
 
 let messageNo = 1;
 let wsConn: WebSocket;

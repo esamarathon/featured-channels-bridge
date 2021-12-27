@@ -4,9 +4,9 @@ import fsExtra from 'fs-extra';
 import http from 'http';
 import _ from 'lodash';
 import path from 'path';
-import * as ffz from './ffz';
-import * as api from './twitch-api';
-import * as ext from './twitch-ext';
+import * as ffz from './ffz'; // eslint-disable-line import/no-cycle
+import * as api from './twitch-api'; // eslint-disable-line import/no-cycle
+import * as ext from './twitch-ext'; // eslint-disable-line import/no-cycle
 
 interface Config {
   http: {

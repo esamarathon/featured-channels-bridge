@@ -40,11 +40,8 @@ module.exports = {
 
     'no-console': 'off',
     '@typescript-eslint/no-explicit-any': 'off', // Should be fixed!
-    // 'import/prefer-default-export': 'off',
-    // '@typescript-eslint/camelcase': 'off',
-    // 'import/no-cycle': 'off',
-    // 'no-restricted-syntax': 'off',
-    // 'no-await-in-loop': 'off',
+    'no-restricted-syntax': 'off',
+    'no-await-in-loop': 'off',
   },
 
   overrides: [{

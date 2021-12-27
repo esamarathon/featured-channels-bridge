@@ -3,8 +3,8 @@
 import fsExtra from 'fs-extra';
 import needle from 'needle';
 import path from 'path';
-import { app, config } from '.';
-import * as ffz from './ffz';
+import { app, config } from '.'; // eslint-disable-line import/no-cycle
+import * as ffz from './ffz'; // eslint-disable-line import/no-cycle
 
 interface TwitchDatabase {
   access_token: string; // eslint-disable-line camelcase
