@@ -35,7 +35,7 @@ function saveDatabase(): void {
 
 async function updateToken(): Promise<void> {
   console.log('Twitch access token being refreshed.');
-  const resp = await needle('post', 'https://api.twitch.tv/kraken/oauth2/token', {
+  const resp = await needle('post', 'https://id.twitch.tv/oauth2/token', {
     grant_type: 'refresh_token',
     refresh_token: encodeURI(twitchDB.refresh_token),
     client_id: config.twitch.clientID,
@@ -45,7 +45,7 @@ async function updateToken(): Promise<void> {
     twitchDB.access_token = resp.body.access_token;
     twitchDB.refresh_token = resp.body.refresh_token;
     if (requestOpts.headers) {
-      requestOpts.headers.Authorization = `OAuth ${resp.body.access_token}`;
+      requestOpts.headers.Authorization = `Bearer ${resp.body.access_token}`;
     }
     console.log('Twitch access token successfully refreshed.');
     saveDatabase();
@@ -53,18 +53,16 @@ async function updateToken(): Promise<void> {
 }
 
 export async function checkTokenValidity(): Promise<void> {
-  const resp = await needle('get', 'https://api.twitch.tv/kraken', requestOpts);
-  if (resp.statusCode === 200) {
-    if (!resp.body.token || !resp.body.token.valid) {
-      await updateToken();
-    }
+  const resp = await needle('get', 'https://id.twitch.tv/oauth2/validate', requestOpts);
+  if (resp.statusCode !== 200) {
+    await updateToken();
   }
 }
 
 async function authTwitch(code: string): Promise<void> {
   const resp1 = await needle(
     'post',
-    'https://api.twitch.tv/kraken/oauth2/token',
+    'https://id.twitch.tv/oauth2/token',
     {
       code,
       client_id: config.twitch.clientID,
@@ -77,20 +75,20 @@ async function authTwitch(code: string): Promise<void> {
   twitchDB.access_token = resp1.body.access_token;
   twitchDB.refresh_token = resp1.body.refresh_token;
   if (requestOpts.headers) {
-    requestOpts.headers.Authorization = `OAuth ${resp1.body.access_token}`;
+    requestOpts.headers.Authorization = `Bearer ${resp1.body.access_token}`;
   }
   console.log('Twitch initial tokens obtained.');
 
   const resp2 = await needle(
     'get',
-    'https://api.twitch.tv/kraken',
+    'https://id.twitch.tv/oauth2/validate',
     requestOpts,
   );
 
-  twitchDB.id = resp2.body.token.user_id;
-  twitchDB.name = resp2.body.token.user_name;
-  console.log('Twitch user trying to authorise is %s.', resp2.body.token.user_name);
-  if (resp2.body.token.user_name === config.twitch.channelName) {
+  twitchDB.id = resp2.body.user_id;
+  twitchDB.name = resp2.body.login;
+  console.log('Twitch user trying to authorise is %s.', resp2.body.login);
+  if (resp2.body.login === config.twitch.channelName) {
     console.log('Twitch authorisation successful.');
     saveDatabase();
     ffz.connectToWS();
@@ -100,10 +98,9 @@ async function authTwitch(code: string): Promise<void> {
 export function init(): void {
   requestOpts = {
     headers: {
-      Accept: 'application/vnd.twitchtv.v5+json',
       'Content-Type': 'application/json',
       'Client-ID': config.twitch.clientID,
-      Authorization: twitchDB.access_token ? `OAuth ${twitchDB.access_token}` : undefined,
+      Authorization: twitchDB.access_token ? `Bearer ${twitchDB.access_token}` : undefined,
     },
   };
 
@@ -117,7 +114,7 @@ export function init(): void {
 
   app.get('/twitchlogin', (req, res) => {
     // tslint:disable-next-line: max-line-length
-    const url = `https://api.twitch.tv/kraken/oauth2/authorize?client_id=${config.twitch.clientID}&redirect_uri=${config.twitch.redirectURI}&response_type=code&scope=chat:read+chat:edit&force_verify=true`;
+    const url = `https://id.twitch.tv/oauth2/authorize?client_id=${config.twitch.clientID}&redirect_uri=${config.twitch.redirectURI}&response_type=code&scope=chat:read+chat:edit&force_verify=true`;
     if (twitchDB.name) {
       // tslint:disable-next-line: max-line-length
       res.send(`<a href="${url}">CLICK HERE TO LOGIN</a><br><br>Account already logged in, only use above link if needed.`);

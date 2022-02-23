@@ -66,7 +66,7 @@ async function sendInitMessages(): Promise<void> {
 function pickServer(): string {
   const randomInt = Math.floor(Math.random() * 7);
   switch (randomInt) {
-    default:
+    default: // eslint-disable-line default-case-last
     case 0:
       return 'wss://catbag.frankerfacez.com/';
     case 1:
