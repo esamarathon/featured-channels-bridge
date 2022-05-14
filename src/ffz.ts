@@ -1,4 +1,4 @@
-import { Chat, ChatEvents } from 'twitch-js';
+import { Chat } from 'twitch-js';
 import WebSocket from 'ws';
 import { checkTokenValidity, twitchDB } from './twitch-api'; // eslint-disable-line import/no-cycle
 
@@ -27,12 +27,14 @@ async function sendMessage(message: string): Promise<string> {
 function sendAuthThroughTwitchChat(auth: string): void {
   console.log('Attempting to authenticate with FrankerFaceZ.');
   checkTokenValidity().then(() => {
-    const client = new Chat({ username: twitchDB.name, token: twitchDB.access_token });
+    const client = new Chat({
+      username: twitchDB.name,
+      token: twitchDB.access_token,
+      log: { enabled: false },
+    });
     client.connect().then(() => {
-      client.once(ChatEvents.CONNECTED, () => {
-        console.log('Connected to Twitch chat to authenticate with FrankerFaceZ.');
-        client.say('frankerfacezauthorizer', `AUTH ${auth}`).then(() => client.disconnect());
-      });
+      console.log('Connected to Twitch chat to authenticate with FrankerFaceZ.');
+      client.say('frankerfacezauthorizer', `AUTH ${auth}`).then(() => client.disconnect());
     });
   });
 }
